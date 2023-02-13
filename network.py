@@ -7,6 +7,7 @@ import argparse
 import json
 import time
 from time import perf_counter
+import sys
 
 _default_file_prefix=None
 _default_disable_logger=False
@@ -81,15 +82,21 @@ def main(file_prefix=_default_file_prefix, \
                                  vdda_step=1000, vddd_step=1000, \
                                  ramp_wait=0.1, warm_wait=20)
     for iog in _io_group_pacman_tile_.keys():
-        print('\n\n')
-        readback=pacman_base.power_readback(c.io, iog, _pacman_version_, \
-                                            _io_group_pacman_tile_[iog])
-        print('\n\n')
-
-    if initial:
-        for iog in _io_group_pacman_tile_.keys():
+        if initial==False:
+            print('\n\n')
+            readback=pacman_base.power_readback(c.io, iog, _pacman_version_, \
+                                                _io_group_pacman_tile_[iog])
+            print('\n\n')
+        if initial:
+            stdoutOrigin=sys.stdout
+            now=time.strftime("%Y_%m_%d_%H_%M_%Z")        
+            sys.stdout=open("power_readback_"+now+".txt", "w")
+            readback=pacman_base.power_readback(c.io, iog, _pacman_version_, \
+                                                _io_group_pacman_tile_[iog])
+            sys.stdout.close()
+            sys.stdout=stdoutOrigin
             pacman_base.power_down_all_tiles(c.io, iog, 'v1rev4')
-        return
+            return
 
     iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(_io_group_pacman_tile_, \
                                                      _asic_version_)
@@ -107,8 +114,16 @@ def main(file_prefix=_default_file_prefix, \
                                                   _asic_version_, \
                                                   0, 0, 15, 2, 8)
         if candidate_root!=None: root_keys.append(candidate_root)
-    print('ROOT KEYS: ',len(root_keys),' total \n',root_keys)
-    if roots: return c
+        
+    if roots==False: print('ROOT KEYS: ',len(root_keys),' total \n',root_keys)
+    if roots:
+        stdoutOrigin=sys.stdout
+        now=time.strftime("%Y_%m_%d_%H_%M_%Z")        
+        sys.stdout=open("root_chips_"+now+".txt", "w")
+        for r in root_keys: print(r)
+        sys.stdout.close()
+        sys.stdout=stdoutOrigin
+        return c
 
     iog_tile_to_root_keys=utility_base.partition_chip_keys_by_io_group_tile(root_keys)
 

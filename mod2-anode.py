@@ -22,6 +22,7 @@ _default_input_json=None
 _default_file_prefix=None
 _default_metric=None
 _default_normalization=50.
+_default_noise_cut=3.
 
 def load_yaml(geometry_path):
     with open(geometry_path) as fi:
@@ -127,8 +128,6 @@ def anode_xy(geo, chip_pix, vertical_lines, horizontal_lines, d, metric, normali
             for j in range(2):
                 ax[j].annotate(str(chipid), [avgX,avgY], ha='center', \
                                va='center', alpha=0.5)
-#    fig.colorbar(cm.ScalarMappable(norm=Normalize(vmin=0, vmax=normalization),\
-#                                   cmap='Reds'), ax=ax)
 
     return fig, ax
 
@@ -139,6 +138,7 @@ def main(geometry_path=_default_geometry_path, \
          file_prefix=_default_file_prefix, \
          metric=_default_metric, \
          normalization=_default_normalization, \
+         noise_cut=_default_noise_cut, \
          **kwargs):
     if input_json==None:
         print('Provide JSON file. Exiting.')
@@ -150,12 +150,32 @@ def main(geometry_path=_default_geometry_path, \
     d = dict()
     with open(input_json,'r') as f: d = json.load(f)
     
-    geo, chip_pix, vertical_lines, horizontal_lines = load_yaml()
+    geo, chip_pix, vertical_lines, horizontal_lines = load_yaml(geometry_path)
     
     fig, ax = anode_xy(geo, chip_pix, vertical_lines, horizontal_lines, d, metric, normalization)
     plt.tight_layout()
-#    plt.show()
     plt.savefig(file_prefix+'-module2-anodes.png')
+
+    if metric=='std':
+        rms_values=[]; high_noise_channel=0
+        for chip_key in d.keys():
+            for channelid in range(64):
+                if d[chip_key][channelid][1]==-1: continue
+                rms_values.append(d[chip_key][channelid][1])
+                if d[chip_key][channelid][1]>noise_cut: high_noise_channel+=1
+        print(high_noise_channel,' high noise channels')
+                
+        fig1, ax1= plt.subplots(1,2,figsize=(12,6))
+        for i in range(2):
+            ax1[i].hist(rms_values, bins=np.linspace(0,255,256))
+            ax1[i].set_yscale('log')
+            ax1[i].set_xlabel('Pedestal RMS [ADC]')
+            ax1[i].set_ylabel('Channel Count')
+            ax1[i].grid(True)
+        ax1[1].set_xlim(0,10)
+        plt.tight_layout()
+        plt.savefig(file_prefix+'-module2-pedestal-rms.png')
+                 
     return
 
 
@@ -174,6 +194,7 @@ if __name__=='__main__':
                         'mean' or 'std' ''')
     parser.add_argument('--normalization', default=_default_normalization, \
                         type=float, help='''Float to normalize color scale''')
-    #parser.add_arg
+    parser.add_argument('--noise_cut', default=_default_noise_cut, \
+                        type=float, help='''Pedestal RMS cut''')
     args = parser.parse_args()
     main(**vars(args))
