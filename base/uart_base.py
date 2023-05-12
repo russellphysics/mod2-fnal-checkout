@@ -167,10 +167,10 @@ def enable_daughter_piso(c, parent, daughter, verbose, tx_diff, tx_slice):
     registers_to_write.append(c[daughter].config.register_map[f'i_tx_diff{piso}'])
     setattr(c[daughter].config,f'tx_slices{piso}', tx_slice)
     registers_to_write.append(c[daughter].config.register_map[f'tx_slices{piso}'])
-    for reg in registers_to_write: c.write_configuration(parent, reg)
+    for reg in registers_to_write: c.write_configuration(daughter, reg)
 
     c[daughter].config.enable_piso_downstream=[0]*4
     c[daughter].config.enable_piso_downstream[piso]=1
-    c.write_configuration(parent, 'enable_piso_downstream')
+    c.write_configuration(daughter, 'enable_piso_downstream')
     if verbose: print(c[daughter].config.enable_piso_downstream)
     return piso
