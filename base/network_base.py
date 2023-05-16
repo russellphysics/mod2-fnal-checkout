@@ -59,7 +59,7 @@ def configure_root_chip(c, chip_key, asic_version, ref_current_trim, \
         for uart in range(4):
             setattr(c[chip_key].config,f'i_rx{uart}', i_rx)
             registers.append(c[chip_key].config.register_map[f'i_rx{uart}'])
-            setattr(c[chip_key].config,f'r_term{uart}', i_rx)
+            setattr(c[chip_key].config,f'r_term{uart}', r_term)
             registers.append(c[chip_key].config.register_map[f'r_term{uart}'])
         for reg in registers: c.write_configuration(chip_key, reg)
         c[chip_key].config.enable_posi=[0]*4
